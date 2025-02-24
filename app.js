@@ -2,9 +2,9 @@ const API_BASE = "https://book-hc8z.onrender.com";
 // Sostituisci col tuo endpoint su Render
 
 document.addEventListener("DOMContentLoaded", () => {
-  // ... codice esistente per books ...
-  // ... bookForm, fetchBooks, fetchCategories, etc. ...
+  // Selettori campi tabella libri
   const booksBody = document.getElementById("booksBody");
+  // Selettori form libro
   const bookForm = document.getElementById("bookForm");
   const bookIdField = document.getElementById("bookId");
   const titleField = document.getElementById("title");
@@ -14,28 +14,32 @@ document.addEventListener("DOMContentLoaded", () => {
   const categorySelect = document.getElementById("categorySelect");
   const ageRangeField = document.getElementById("ageRange");
   const descField = document.getElementById("description");
-  // -- Sezione Commenti
+
+  // Sezione Commenti
   const commentSection = document.getElementById("commentSection");
   const commentBookTitle = document.getElementById("commentBookTitle");
   const commentsList = document.getElementById("commentsList");
   const commentForm = document.getElementById("commentForm");
   const newCommentText = document.getElementById("newCommentText");
-  let currentBookIdForComments = null; // memorizza l'id del libro selezionato
 
-   // Al caricamento, fetch libri e categorie
-   fetchBooks();
-   fetchCategories();
- 
-   // FORM LIBRO
-   bookForm.addEventListener("submit", (e) => {
-     e.preventDefault();
-     if (bookIdField.value) {
-       updateBook(bookIdField.value);
-     } else {
-       createBook();
-     }
-   });
-  // EVENT LISTENER FORM COMMENTI
+  // Salva l'ID del libro selezionato per i commenti
+  let currentBookIdForComments = null;
+
+  // 1. Al caricamento, preleva libri e categorie
+  fetchBooks();
+  fetchCategories();
+
+  // 2. Gestione submit form libro: crea o aggiorna
+  bookForm.addEventListener("submit", (e) => {
+    e.preventDefault();
+    if (bookIdField.value) {
+      updateBook(bookIdField.value);
+    } else {
+      createBook();
+    }
+  });
+
+  // 3. Gestione submit form commenti: aggiunge un commento al libro corrente
   commentForm.addEventListener("submit", (e) => {
     e.preventDefault();
     if (!currentBookIdForComments) {
@@ -45,24 +49,26 @@ document.addEventListener("DOMContentLoaded", () => {
     addComment(currentBookIdForComments);
   });
 
- // ==============================
+  // ==============================
   // Funzioni per LIBRI
   // ==============================
 
   async function fetchBooks() {
-    booksBody.innerHTML = "<tr><td colspan='7'>Caricamento...</td></tr>";
+    booksBody.innerHTML = "<tr><td colspan='8'>Caricamento...</td></tr>";
     try {
       const res = await fetch(`${API_BASE}/books`);
+      if (!res.ok) throw new Error("Errore fetch /books");
       const data = await res.json();
       renderBooks(data);
     } catch (err) {
-      booksBody.innerHTML = `<tr><td colspan='7'>Errore: ${err.message}</td></tr>`;
+      booksBody.innerHTML = `<tr><td colspan='8'>Errore: ${err.message}</td></tr>`;
     }
   }
 
   function renderBooks(books) {
     booksBody.innerHTML = "";
     books.forEach((book) => {
+      // Creiamo una riga per ogni libro
       const tr = document.createElement("tr");
       tr.innerHTML = `
         <td>${book.id}</td>
@@ -71,6 +77,7 @@ document.addEventListener("DOMContentLoaded", () => {
         <td>${book.year || ""}</td>
         <td>${book.pages || ""}</td>
         <td>${book.categories?.name || "N/A"}</td>
+        <td>${book.age_range || ""}</td>
         <td>
           <button data-id="${book.id}" class="editBtn">Modifica</button>
           <button data-id="${book.id}" class="delBtn">Elimina</button>
@@ -80,7 +87,7 @@ document.addEventListener("DOMContentLoaded", () => {
       booksBody.appendChild(tr);
     });
 
-    // Bottone Modifica
+    // Bottone “Modifica”
     document.querySelectorAll(".editBtn").forEach((btn) => {
       btn.addEventListener("click", () => {
         const id = btn.dataset.id;
@@ -88,7 +95,7 @@ document.addEventListener("DOMContentLoaded", () => {
       });
     });
 
-    // Bottone Elimina
+    // Bottone “Elimina”
     document.querySelectorAll(".delBtn").forEach((btn) => {
       btn.addEventListener("click", () => {
         const id = btn.dataset.id;
@@ -96,7 +103,7 @@ document.addEventListener("DOMContentLoaded", () => {
       });
     });
 
-    // Bottone Commenti
+    // Bottone “Commenti”
     document.querySelectorAll(".cmtBtn").forEach((btn) => {
       btn.addEventListener("click", () => {
         const id = btn.dataset.id;
@@ -109,6 +116,7 @@ document.addEventListener("DOMContentLoaded", () => {
   async function fetchCategories() {
     try {
       const res = await fetch(`${API_BASE}/categories`);
+      if (!res.ok) throw new Error("Errore fetch /categories");
       const data = await res.json();
       renderCategories(data);
     } catch (err) {
@@ -137,11 +145,12 @@ document.addEventListener("DOMContentLoaded", () => {
       description: descField.value
     };
     try {
-      await fetch(`${API_BASE}/books`, {
+      const res = await fetch(`${API_BASE}/books`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body)
       });
+      if (!res.ok) throw new Error("Errore POST /books");
       bookForm.reset();
       fetchBooks();
     } catch (err) {
@@ -152,9 +161,10 @@ document.addEventListener("DOMContentLoaded", () => {
   async function loadBook(bookId) {
     try {
       const res = await fetch(`${API_BASE}/books/${bookId}`);
-      if (!res.ok) throw new Error("Errore GET libro");
+      if (!res.ok) throw new Error("Errore GET /books/:id");
       const book = await res.json();
 
+      // Popola campi form
       bookIdField.value = book.id;
       titleField.value = book.title;
       authorField.value = book.author;
@@ -162,8 +172,8 @@ document.addEventListener("DOMContentLoaded", () => {
       pagesField.value = book.pages || "";
       ageRangeField.value = book.age_range || "";
       descField.value = book.description || "";
-      // Nota: la categorySelect si può gestire se hai book.category_id (non c’è in your server? se serve, modificalo)
-      // ...
+      // category_id non presente in schema? Se serve, potresti esporlo col server.
+      // if (book.category_id) categorySelect.value = book.category_id;
     } catch (err) {
       alert("Errore caricamento libro: " + err.message);
     }
@@ -181,7 +191,7 @@ document.addEventListener("DOMContentLoaded", () => {
     };
     try {
       const res = await fetch(`${API_BASE}/books/${bookId}`, {
-        method: "PUT", // Se non hai definito PUT, puoi usare PATCH
+        method: "PUT", 
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body),
       });
@@ -205,35 +215,39 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
+  // ==============================
+  // Gestione COMMENTI
+  // ==============================
 
-
-  // FUNZIONE showComments
   async function showComments(bookId, bookTitle) {
     try {
       const res = await fetch(`${API_BASE}/books/${bookId}`);
-      if (!res.ok) throw new Error("Errore caricamento libro per commenti");
+      if (!res.ok) throw new Error("Errore caricamento /books/:id");
       const book = await res.json();
 
+      // Salviamo ID libro
       currentBookIdForComments = bookId;
-      commentBookTitle.textContent = bookTitle; // o book.title
+      // Titolo per la sezione commenti
+      commentBookTitle.textContent = bookTitle; 
+      // Render commenti
       renderComments(book.comments || []);
+      // Mostra la sezione
       commentSection.style.display = "block";
     } catch (err) {
       alert(err.message);
     }
   }
 
-  // RENDER COMMENTI
   function renderComments(comments) {
     commentsList.innerHTML = "";
     comments.forEach((c) => {
       const li = document.createElement("li");
 
-      // Creiamo uno span per il testo del commento
+      // Testo del commento
       const spanText = document.createElement("span");
       spanText.textContent = c.comment_text;
 
-      // Bottone Modifica
+      // Bottone modifica
       const editBtn = document.createElement("button");
       editBtn.textContent = "Modifica";
       editBtn.style.marginLeft = "10px";
@@ -241,7 +255,7 @@ document.addEventListener("DOMContentLoaded", () => {
         editCommentPrompt(c.id, c.comment_text);
       });
 
-      // Bottone Elimina
+      // Bottone elimina
       const delBtn = document.createElement("button");
       delBtn.textContent = "Elimina";
       delBtn.style.marginLeft = "5px";
@@ -256,19 +270,17 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
-  // AGGIUNGI COMMENTO
   async function addComment(bookId) {
     const comment_text = newCommentText.value.trim();
     if (!comment_text) return;
-
     try {
       const res = await fetch(`${API_BASE}/books/${bookId}/comments`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ comment_text })
       });
-      if (!res.ok) throw new Error("Errore aggiunta commento");
-      const updatedBook = await res.json(); // Ritorna il libro aggiornato con comments
+      if (!res.ok) throw new Error("Errore POST /books/:id/comments");
+      const updatedBook = await res.json();
       renderComments(updatedBook.comments || []);
       newCommentText.value = "";
     } catch (err) {
@@ -276,12 +288,11 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
-  // MODIFICA COMMENTO
   function editCommentPrompt(commentId, oldText) {
     const newText = prompt("Modifica commento:", oldText);
-    if (newText === null) return; // annulla
+    if (newText === null) return; // click su annulla
     const trimmed = newText.trim();
-    if (!trimmed) return; // stringa vuota => ignora
+    if (!trimmed) return; // vuoto => ignora
     updateComment(commentId, trimmed);
   }
 
@@ -292,11 +303,10 @@ document.addEventListener("DOMContentLoaded", () => {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ comment_text: newText })
       });
-      if (!res.ok) throw new Error("Errore update commento");
+      if (!res.ok) throw new Error("Errore PUT /comments/:id");
       const updatedComment = await res.json();
-      // Non abbiamo l'elenco dei commenti qui, quindi ricarichiamo i commenti del libro
+      // Ricarichiamo i commenti del libro
       if (currentBookIdForComments) {
-        // Ricarichiamo i commenti col libro
         showComments(currentBookIdForComments, commentBookTitle.textContent);
       }
     } catch (err) {
@@ -304,14 +314,13 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
-  // ELIMINA COMMENTO
   async function deleteComment(commentId) {
     if (!confirm("Vuoi eliminare questo commento?")) return;
     try {
       const res = await fetch(`${API_BASE}/comments/${commentId}`, {
         method: "DELETE"
       });
-      if (!res.ok) throw new Error("Errore eliminazione commento");
+      if (!res.ok) throw new Error("Errore DELETE /comments/:id");
       // Ricarica commenti
       if (currentBookIdForComments) {
         showComments(currentBookIdForComments, commentBookTitle.textContent);
@@ -319,55 +328,5 @@ document.addEventListener("DOMContentLoaded", () => {
     } catch (err) {
       alert(err.message);
     }
-  }
-
-  // ... Resto del codice per BOOKS ...
-  // (fetchBooks, renderBooks, createBook, updateBook, deleteBook ecc.)
-
-  // Aggiorniamo renderBooks per aggiungere il pulsante "Commenti"
-  function renderBooks(books) {
-    booksBody.innerHTML = "";
-    books.forEach((book) => {
-      const tr = document.createElement("tr");
-      tr.innerHTML = `
-        <td>${book.id}</td>
-        <td>${book.title}</td>
-        <td>${book.author}</td>
-        <td>${book.year || ""}</td>
-        <td>${book.pages || ""}</td>
-        <td>${book.categories?.name || "N/A"}</td>
-        <td>
-          <button data-id="${book.id}" class="editBtn">Modifica</button>
-          <button data-id="${book.id}" class="delBtn">Elimina</button>
-          <button data-id="${book.id}" data-title="${book.title}" class="cmtBtn">Commenti</button>
-        </td>
-      `;
-      booksBody.appendChild(tr);
-    });
-
-    // ... come prima ...
-    document.querySelectorAll(".editBtn").forEach((btn) => {
-      btn.addEventListener("click", () => {
-        const id = btn.dataset.id;
-        loadBook(id);
-      });
-    });
-
-    // ... come prima ...
-    document.querySelectorAll(".delBtn").forEach((btn) => {
-      btn.addEventListener("click", () => {
-        const id = btn.dataset.id;
-        deleteBook(id);
-      });
-    });
-
-    // Bottone “Commenti”
-    document.querySelectorAll(".cmtBtn").forEach((btn) => {
-      btn.addEventListener("click", () => {
-        const id = btn.dataset.id;
-        const title = btn.dataset.title;
-        showComments(id, title);
-      });
-    });
   }
 });
