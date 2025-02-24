@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8" />
+  <title>Gestione Libri</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <h1>Gestione Libri</h1>
+
+  <!-- Tabella per visualizzare i libri -->
+  <table id="booksTable">
+    <thead>
+      <tr>
+        <th>ID</th>
+        <th>Titolo</th>
+        <th>Autore</th>
+        <th>Anno</th>
+        <th>Pagine</th>
+        <th>Categoria</th>
+        <th>Fascia Età</th>
+        <th>Azione</th>
+      </tr>
+    </thead>
+    <tbody id="booksBody">
+      <!-- Popolata dinamicamente da app.js -->
+    </tbody>
+  </table>
+
+  <hr />
+
+  <h2>Aggiungi/Modifica Libro</h2>
+  <form id="bookForm">
+    <input type="hidden" id="bookId" />
+    <div>
+      <label for="title">Titolo:</label>
+      <input type="text" id="title" required />
+    </div>
+    <div>
+      <label for="author">Autore:</label>
+      <input type="text" id="author" required />
+    </div>
+    <div>
+      <label for="year">Anno:</label>
+      <input type="number" id="year" />
+    </div>
+    <div>
+      <label for="pages">Pagine:</label>
+      <input type="number" id="pages" />
+    </div>
+    <div>
+      <label for="categorySelect">Categoria:</label>
+      <select id="categorySelect"></select>
+    </div>
+    <div>
+      <label for="ageRange">Fascia Età:</label>
+      <input type="text" id="ageRange" placeholder="Es: 14+, 18+..." />
+    </div>
+    <div>
+      <label for="description">Descrizione:</label><br />
+      <textarea id="description" rows="3" cols="40"></textarea>
+    </div>
+
+    <button type="submit">Salva Libro</button>
+  </form>
+
+  <script src="app.js"></script>
+</body>
+</html>
