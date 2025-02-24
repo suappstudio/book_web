@@ -4,7 +4,16 @@ const API_BASE = "https://book-hc8z.onrender.com";
 document.addEventListener("DOMContentLoaded", () => {
   // ... codice esistente per books ...
   // ... bookForm, fetchBooks, fetchCategories, etc. ...
-
+  const booksBody = document.getElementById("booksBody");
+  const bookForm = document.getElementById("bookForm");
+  const bookIdField = document.getElementById("bookId");
+  const titleField = document.getElementById("title");
+  const authorField = document.getElementById("author");
+  const yearField = document.getElementById("year");
+  const pagesField = document.getElementById("pages");
+  const categorySelect = document.getElementById("categorySelect");
+  const ageRangeField = document.getElementById("ageRange");
+  const descField = document.getElementById("description");
   // -- Sezione Commenti
   const commentSection = document.getElementById("commentSection");
   const commentBookTitle = document.getElementById("commentBookTitle");
@@ -13,6 +22,19 @@ document.addEventListener("DOMContentLoaded", () => {
   const newCommentText = document.getElementById("newCommentText");
   let currentBookIdForComments = null; // memorizza l'id del libro selezionato
 
+   // Al caricamento, fetch libri e categorie
+   fetchBooks();
+   fetchCategories();
+ 
+   // FORM LIBRO
+   bookForm.addEventListener("submit", (e) => {
+     e.preventDefault();
+     if (bookIdField.value) {
+       updateBook(bookIdField.value);
+     } else {
+       createBook();
+     }
+   });
   // EVENT LISTENER FORM COMMENTI
   commentForm.addEventListener("submit", (e) => {
     e.preventDefault();
@@ -22,6 +44,168 @@ document.addEventListener("DOMContentLoaded", () => {
     }
     addComment(currentBookIdForComments);
   });
+
+ // ==============================
+  // Funzioni per LIBRI
+  // ==============================
+
+  async function fetchBooks() {
+    booksBody.innerHTML = "<tr><td colspan='7'>Caricamento...</td></tr>";
+    try {
+      const res = await fetch(`${API_BASE}/books`);
+      const data = await res.json();
+      renderBooks(data);
+    } catch (err) {
+      booksBody.innerHTML = `<tr><td colspan='7'>Errore: ${err.message}</td></tr>`;
+    }
+  }
+
+  function renderBooks(books) {
+    booksBody.innerHTML = "";
+    books.forEach((book) => {
+      const tr = document.createElement("tr");
+      tr.innerHTML = `
+        <td>${book.id}</td>
+        <td>${book.title}</td>
+        <td>${book.author}</td>
+        <td>${book.year || ""}</td>
+        <td>${book.pages || ""}</td>
+        <td>${book.categories?.name || "N/A"}</td>
+        <td>
+          <button data-id="${book.id}" class="editBtn">Modifica</button>
+          <button data-id="${book.id}" class="delBtn">Elimina</button>
+          <button data-id="${book.id}" data-title="${book.title}" class="cmtBtn">Commenti</button>
+        </td>
+      `;
+      booksBody.appendChild(tr);
+    });
+
+    // Bottone Modifica
+    document.querySelectorAll(".editBtn").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const id = btn.dataset.id;
+        loadBook(id);
+      });
+    });
+
+    // Bottone Elimina
+    document.querySelectorAll(".delBtn").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const id = btn.dataset.id;
+        deleteBook(id);
+      });
+    });
+
+    // Bottone Commenti
+    document.querySelectorAll(".cmtBtn").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const id = btn.dataset.id;
+        const title = btn.dataset.title;
+        showComments(id, title);
+      });
+    });
+  }
+
+  async function fetchCategories() {
+    try {
+      const res = await fetch(`${API_BASE}/categories`);
+      const data = await res.json();
+      renderCategories(data);
+    } catch (err) {
+      console.error("Errore fetch categorie:", err);
+    }
+  }
+
+  function renderCategories(categories) {
+    categorySelect.innerHTML = "";
+    categories.forEach(cat => {
+      const opt = document.createElement("option");
+      opt.value = cat.id;
+      opt.textContent = cat.name;
+      categorySelect.appendChild(opt);
+    });
+  }
+
+  async function createBook() {
+    const body = {
+      title: titleField.value,
+      author: authorField.value,
+      year: parseInt(yearField.value) || null,
+      pages: parseInt(pagesField.value) || null,
+      category_id: parseInt(categorySelect.value),
+      age_range: ageRangeField.value,
+      description: descField.value
+    };
+    try {
+      await fetch(`${API_BASE}/books`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body)
+      });
+      bookForm.reset();
+      fetchBooks();
+    } catch (err) {
+      alert("Errore creazione libro: " + err.message);
+    }
+  }
+
+  async function loadBook(bookId) {
+    try {
+      const res = await fetch(`${API_BASE}/books/${bookId}`);
+      if (!res.ok) throw new Error("Errore GET libro");
+      const book = await res.json();
+
+      bookIdField.value = book.id;
+      titleField.value = book.title;
+      authorField.value = book.author;
+      yearField.value = book.year || "";
+      pagesField.value = book.pages || "";
+      ageRangeField.value = book.age_range || "";
+      descField.value = book.description || "";
+      // Nota: la categorySelect si può gestire se hai book.category_id (non c’è in your server? se serve, modificalo)
+      // ...
+    } catch (err) {
+      alert("Errore caricamento libro: " + err.message);
+    }
+  }
+
+  async function updateBook(bookId) {
+    const body = {
+      title: titleField.value,
+      author: authorField.value,
+      year: parseInt(yearField.value) || null,
+      pages: parseInt(pagesField.value) || null,
+      category_id: parseInt(categorySelect.value),
+      age_range: ageRangeField.value,
+      description: descField.value
+    };
+    try {
+      const res = await fetch(`${API_BASE}/books/${bookId}`, {
+        method: "PUT", // Se non hai definito PUT, puoi usare PATCH
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+      if (!res.ok) throw new Error("Errore update libro");
+      bookForm.reset();
+      bookIdField.value = "";
+      fetchBooks();
+    } catch (err) {
+      alert("Errore update libro: " + err.message);
+    }
+  }
+
+  async function deleteBook(bookId) {
+    if (!confirm("Eliminare il libro?")) return;
+    try {
+      const res = await fetch(`${API_BASE}/books/${bookId}`, { method: "DELETE" });
+      if (!res.ok) throw new Error("Errore eliminazione libro");
+      fetchBooks();
+    } catch (err) {
+      alert(err.message);
+    }
+  }
+
+
 
   // FUNZIONE showComments
   async function showComments(bookId, bookTitle) {
