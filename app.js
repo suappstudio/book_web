@@ -1,4 +1,4 @@
-const API_BASE = "https://nome-app.onrender.com"; 
+const API_BASE = "https://book-hc8z.onrender.com"; 
 // Sostituisci col tuo endpoint su Render
 
 document.addEventListener("DOMContentLoaded", () => {
