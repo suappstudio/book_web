@@ -64,6 +64,21 @@
     <button type="submit">Salva Libro</button>
   </form>
 
+  <hr />
+
+  <!-- Sezione dedicata ai COMMENTI -->
+  <!-- All'inizio nascosta, verrà mostrata cliccando il pulsante "Commenti" di un libro. -->
+  <div id="commentSection" style="display: none; margin-top:20px;">
+    <h2>Commenti per il libro <span id="commentBookTitle"></span></h2>
+    <ul id="commentsList">
+      <!-- Questo elenco verrà popolato dinamicamente da app.js -->
+    </ul>
+    <form id="commentForm" style="margin-top: 10px;">
+      <input type="text" id="newCommentText" placeholder="Inserisci un commento..." required />
+      <button type="submit">Aggiungi Commento</button>
+    </form>
+  </div>
+
   <script src="app.js"></script>
 </body>
 </html>
